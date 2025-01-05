@@ -94,7 +94,7 @@ const TextToSpeech = ({ text }) => {
   };
 
   return (
-    <div className="w-full text-white p-4 bg-[#8174A0] rounded-lg shadow-lg">
+    <div className="w-full text-white p-4 bg-[#CDC1FF] rounded-lg shadow-lg">
       {/* Voice Selection */}
       <div>
         <label htmlFor="voices" className="block mb-2 text-lg font-medium">
