@@ -9,28 +9,28 @@ const TextToSpeech = ({ text }) => {
   const [volume, setVolume] = useState(1);
   const [voices, setVoices] = useState([]);
 
+  // Function to load voices
+  const loadVoices = () => {
+    const synth = window.speechSynthesis;
+    const availableVoices = synth.getVoices();
+    setVoices(availableVoices);
+
+    // Automatically choose the first available voice if none is selected
+    if (!voice && availableVoices.length > 0) {
+      setVoice(availableVoices[0]);
+    }
+  };
+
   useEffect(() => {
     const synth = window.speechSynthesis;
 
-    // Function to load voices
-    const loadVoices = () => {
-      const availableVoices = synth.getVoices();
-      setVoices(availableVoices);
-      if (!voice) {
-        setVoice(availableVoices[0]); // Set default voice if not already set
-      }
-    };
-
-    // Try to load voices immediately, but if it's not ready, wait for the event
+    // Listen for voice changes
     if (speechSynthesis.onvoiceschanged !== undefined) {
       speechSynthesis.onvoiceschanged = loadVoices;
-    } else {
-      loadVoices(); // Fallback for environments that do not support the event
     }
 
-    // Delay voice loading on mobile to make sure it's available
-    setTimeout(loadVoices, 1000); // 1 second delay to give voices time to load
-
+    // Initial voice loading
+    loadVoices();
     return () => {
       if (speechSynthesis.onvoiceschanged !== undefined) {
         speechSynthesis.onvoiceschanged = null;
@@ -106,11 +106,15 @@ const TextToSpeech = ({ text }) => {
           value={voice?.name}
           onChange={handleVoiceChange}
         >
-          {voices.map((v) => (
-            <option key={v.name} value={v.name}>
-              {v.name} ({v.lang})
-            </option>
-          ))}
+          {voices.length > 0 ? (
+            voices.map((v) => (
+              <option key={v.name} value={v.name}>
+                {v.name} ({v.lang})
+              </option>
+            ))
+          ) : (
+            <option value="">Loading voices...</option>
+          )}
         </select>
       </div>
 
