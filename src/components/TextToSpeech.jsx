@@ -10,11 +10,31 @@ const TextToSpeech = ({ text }) => {
 
   useEffect(() => {
     const synth = window.speechSynthesis;
-    const u = new SpeechSynthesisUtterance(text);
-    const voices = synth.getVoices();
 
+    const loadVoices = () => {
+      const voices = synth.getVoices();
+      setVoice(voices[0]); // Set the default voice
+    };
+
+    // Wait for voices to be loaded
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = loadVoices;
+    } else {
+      loadVoices(); // Fallback if the event is not supported
+    }
+
+    return () => {
+      // Clean up event listener
+      if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const synth = window.speechSynthesis;
+    const u = new SpeechSynthesisUtterance(text);
     setUtterance(u);
-    setVoice(voices[0]);
 
     return () => {
       synth.cancel();
@@ -39,17 +59,13 @@ const TextToSpeech = ({ text }) => {
 
   const handlePause = () => {
     const synth = window.speechSynthesis;
-
     synth.pause();
-
     setIsPaused(true);
   };
 
   const handleStop = () => {
     const synth = window.speechSynthesis;
-
     synth.cancel();
-
     setIsPaused(false);
   };
 
@@ -135,7 +151,7 @@ const TextToSpeech = ({ text }) => {
       <div className="flex flex-wrap gap-4 mt-6 justify-center">
         <button
           onClick={handlePlay}
-          className="focus:outline-none text-white bg-green-400 hover:bg-green-600 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-6 py-2 mr-2"
+          className="focus:outline-none text-white bg-green-600 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-6 py-2 mr-2"
         >
           {isPaused ? "Resume" : "Play"}
         </button>
