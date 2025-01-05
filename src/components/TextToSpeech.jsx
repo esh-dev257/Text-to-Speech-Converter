@@ -7,24 +7,26 @@ const TextToSpeech = ({ text }) => {
   const [pitch, setPitch] = useState(1);
   const [rate, setRate] = useState(1);
   const [volume, setVolume] = useState(1);
+  const [voices, setVoices] = useState([]);
 
   useEffect(() => {
     const synth = window.speechSynthesis;
 
+    // Function to load voices
     const loadVoices = () => {
-      const voices = synth.getVoices();
-      setVoice(voices[0]); // Set the default voice
+      const availableVoices = synth.getVoices();
+      setVoices(availableVoices);
+      setVoice(availableVoices[0]); // Set the default voice
     };
 
-    // Wait for voices to be loaded
+    // Handle voices when they change
     if (speechSynthesis.onvoiceschanged !== undefined) {
       speechSynthesis.onvoiceschanged = loadVoices;
     } else {
-      loadVoices(); // Fallback if the event is not supported
+      loadVoices(); // Fallback for environments that do not support the event
     }
 
     return () => {
-      // Clean up event listener
       if (speechSynthesis.onvoiceschanged !== undefined) {
         speechSynthesis.onvoiceschanged = null;
       }
@@ -32,14 +34,13 @@ const TextToSpeech = ({ text }) => {
   }, []);
 
   useEffect(() => {
-    const synth = window.speechSynthesis;
-    const u = new SpeechSynthesisUtterance(text);
-    setUtterance(u);
-
-    return () => {
-      synth.cancel();
-    };
-  }, [text]);
+    if (utterance) {
+      utterance.voice = voice;
+      utterance.pitch = pitch;
+      utterance.rate = rate;
+      utterance.volume = volume;
+    }
+  }, [voice, pitch, rate, volume, text]);
 
   const handlePlay = () => {
     const synth = window.speechSynthesis;
@@ -47,11 +48,12 @@ const TextToSpeech = ({ text }) => {
     if (isPaused) {
       synth.resume();
     } else {
-      utterance.voice = voice;
-      utterance.pitch = pitch;
-      utterance.rate = rate;
-      utterance.volume = volume;
-      synth.speak(utterance);
+      const u = new SpeechSynthesisUtterance(text);
+      u.voice = voice;
+      u.pitch = pitch;
+      u.rate = rate;
+      u.volume = volume;
+      synth.speak(u);
     }
 
     setIsPaused(false);
@@ -70,8 +72,8 @@ const TextToSpeech = ({ text }) => {
   };
 
   const handleVoiceChange = (event) => {
-    const voices = window.speechSynthesis.getVoices();
-    setVoice(voices.find((v) => v.name === event.target.value));
+    const selectedVoice = voices.find((v) => v.name === event.target.value);
+    setVoice(selectedVoice);
   };
 
   const handlePitchChange = (event) => {
@@ -99,9 +101,9 @@ const TextToSpeech = ({ text }) => {
           value={voice?.name}
           onChange={handleVoiceChange}
         >
-          {window.speechSynthesis.getVoices().map((voice) => (
-            <option key={voice.name} value={voice.name}>
-              {voice.name}
+          {voices.map((v) => (
+            <option key={v.name} value={v.name}>
+              {v.name} ({v.lang})
             </option>
           ))}
         </select>
