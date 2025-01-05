@@ -16,15 +16,20 @@ const TextToSpeech = ({ text }) => {
     const loadVoices = () => {
       const availableVoices = synth.getVoices();
       setVoices(availableVoices);
-      setVoice(availableVoices[0]); // Set the default voice
+      if (!voice) {
+        setVoice(availableVoices[0]); // Set default voice if not already set
+      }
     };
 
-    // Handle voices when they change
+    // Try to load voices immediately, but if it's not ready, wait for the event
     if (speechSynthesis.onvoiceschanged !== undefined) {
       speechSynthesis.onvoiceschanged = loadVoices;
     } else {
       loadVoices(); // Fallback for environments that do not support the event
     }
+
+    // Delay voice loading on mobile to make sure it's available
+    setTimeout(loadVoices, 1000); // 1 second delay to give voices time to load
 
     return () => {
       if (speechSynthesis.onvoiceschanged !== undefined) {
