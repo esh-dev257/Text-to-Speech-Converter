@@ -1,54 +1,84 @@
 import { useState, useEffect } from "react";
-import responsiveVoice from "responsivevoice";
 
 const TextToSpeech = ({ text }) => {
   const [isPaused, setIsPaused] = useState(false);
-  const [voice, setVoice] = useState("UK English Female"); // Default voice
+  const [utterance, setUtterance] = useState(null);
+  const [voice, setVoice] = useState(null);
   const [pitch, setPitch] = useState(1);
   const [rate, setRate] = useState(1);
   const [volume, setVolume] = useState(1);
+  const [voices, setVoices] = useState([]);
 
-  const voices = [
-    "UK English Female",
-    "UK English Male",
-    "US English Female",
-    "US English Male",
-    "French Female",
-    "French Male",
-    "Spanish Female",
-    "Spanish Male",
-    "German Female",
-    "German Male",
-    "Italian Female",
-    "Italian Male",
-    // Add other voices based on the responsivevoice.js documentation
-  ];
+  // Function to load voices
+  const loadVoices = () => {
+    const synth = window.speechSynthesis;
+    const availableVoices = synth.getVoices();
+    setVoices(availableVoices);
 
-  const handlePlay = () => {
-    // If the text is not empty, play the voice
-    if (text.trim()) {
-      responsiveVoice.speak(text, voice, {
-        pitch: pitch,
-        rate: rate,
-        volume: volume,
-      });
+    // Automatically choose the first available voice if none is selected
+    if (!voice && availableVoices.length > 0) {
+      setVoice(availableVoices[0]);
     }
   };
 
+  useEffect(() => {
+    const synth = window.speechSynthesis;
+
+    // Listen for voice changes
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    // Initial voice loading
+    loadVoices();
+    return () => {
+      if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (utterance) {
+      utterance.voice = voice;
+      utterance.pitch = pitch;
+      utterance.rate = rate;
+      utterance.volume = volume;
+    }
+  }, [voice, pitch, rate, volume, text]);
+
+  const handlePlay = () => {
+    const synth = window.speechSynthesis;
+
+    if (isPaused) {
+      synth.resume();
+    } else {
+      const u = new SpeechSynthesisUtterance(text);
+      u.voice = voice;
+      u.pitch = pitch;
+      u.rate = rate;
+      u.volume = volume;
+      synth.speak(u);
+    }
+
+    setIsPaused(false);
+  };
+
   const handlePause = () => {
-    // Stop the speech when paused
-    responsiveVoice.pause();
+    const synth = window.speechSynthesis;
+    synth.pause();
     setIsPaused(true);
   };
 
   const handleStop = () => {
-    // Stop the speech
-    responsiveVoice.cancel();
+    const synth = window.speechSynthesis;
+    synth.cancel();
     setIsPaused(false);
   };
 
   const handleVoiceChange = (event) => {
-    setVoice(event.target.value);
+    const selectedVoice = voices.find((v) => v.name === event.target.value);
+    setVoice(selectedVoice);
   };
 
   const handlePitchChange = (event) => {
@@ -64,7 +94,7 @@ const TextToSpeech = ({ text }) => {
   };
 
   return (
-    <div className="w-full text-white p-4 bg-[#8174A0] rounded-lg shadow-lg">
+    <div className="w-full text-white p-4 bg-[#CDC1FF] rounded-lg shadow-lg">
       {/* Voice Selection */}
       <div>
         <label htmlFor="voices" className="block mb-2 text-lg font-medium">
@@ -73,14 +103,18 @@ const TextToSpeech = ({ text }) => {
         <select
           id="voices"
           className="bg-white border border-gray-300 text-sm md:text-md rounded-lg block w-full p-2.5 text-black"
-          value={voice}
+          value={voice?.name}
           onChange={handleVoiceChange}
         >
-          {voices.map((v) => (
-            <option key={v} value={v}>
-              {v}
-            </option>
-          ))}
+          {voices.length > 0 ? (
+            voices.map((v) => (
+              <option key={v.name} value={v.name}>
+                {v.name} ({v.lang})
+              </option>
+            ))
+          ) : (
+            <option value="">Loading voices...</option>
+          )}
         </select>
       </div>
 
